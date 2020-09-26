@@ -32,7 +32,7 @@ public class Address implements Serializable {
     private String city;
     private int zip;
 
-    @OneToMany(mappedBy = "address", cascade = CascadeType.PERSIST)
+    @OneToMany(mappedBy = "address", cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     private List<Person> persons;
 
     public Address() {
@@ -84,6 +84,18 @@ public class Address implements Serializable {
     public void setPersons(List<Person> persons) {
         this.persons = persons;
     }
+    
+    public void addPerson(Person person){
+        persons.add(person);
+        
+        if(person != null){
+            person.setAddress(this);
+        }
+    }
+    
+    public void removePerson(Person person) {
+        persons.remove(person);
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -111,5 +123,6 @@ public class Address implements Serializable {
         }
         return true;
     }
+
 
 }

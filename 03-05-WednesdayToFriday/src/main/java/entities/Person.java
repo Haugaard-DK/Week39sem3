@@ -11,66 +11,72 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
-import javax.persistence.OneToOne;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+/**
+ *
+ * @author Mathias
+ */
 @Entity
 @NamedQueries({
-    @NamedQuery(name = "Person.deleteAllRows", query = "DELETE from Person"),
-    @NamedQuery(name = "Person.getAll", query = "SELECT p FROM Person p")
+    @NamedQuery(name = "Person.deleteAllRows", query = "DELETE FROM Person"),
+    @NamedQuery(name = "Person.getAll", query = "SELECT p FROM Person p"),
+    @NamedQuery(name = "Person.getByAddress", query = "SELECT p FROM Person p WHERE p.address.id = :id")
 })
 public class Person implements Serializable {
 
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-    private String fName;
-    private String lName;
+    private int id;
+    private String firstName;
+    private String lastName;
     private String phone;
+
     @Temporal(TemporalType.DATE)
     private Date created;
+
     @Temporal(TemporalType.DATE)
     private Date lastEdited;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     private Address address;
 
-    public Person() {
-    }
-
-    public Person(String fName, String lName, String phone, Address address) {
-        this.fName = fName;
-        this.lName = lName;
+    public Person(String firstName, String lastName, String phone) {
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.phone = phone;
-        this.address = address;
+
         created = new Date();
         lastEdited = new Date();
     }
 
-    public Integer getId() {
+    public Person() {
+    }
+
+    public int getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(int id) {
         this.id = id;
     }
 
     public String getfName() {
-        return fName;
+        return firstName;
     }
 
-    public void setfName(String fName) {
-        this.fName = fName;
+    public void setfName(String firstName) {
+        this.firstName = firstName;
     }
 
     public String getlName() {
-        return lName;
+        return lastName;
     }
 
-    public void setlName(String lName) {
-        this.lName = lName;
+    public void setlName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getPhone() {
@@ -102,10 +108,7 @@ public class Person implements Serializable {
     }
 
     public void setAddress(Address address) {
-        if (address != null) {
-            this.address = address;
-            address.getPersons().add(this);
-        }
+        this.address = address;
     }
 
     @Override
@@ -120,19 +123,30 @@ public class Person implements Serializable {
             return false;
         }
         final Person other = (Person) obj;
-        if (!Objects.equals(this.fName, other.fName)) {
+        if (!Objects.equals(this.firstName, other.firstName)) {
             return false;
         }
-        if (!Objects.equals(this.lName, other.lName)) {
+        if (!Objects.equals(this.lastName, other.lastName)) {
             return false;
         }
         if (!Objects.equals(this.phone, other.phone)) {
+            return false;
+        }
+        if (!Objects.equals(this.created, other.created)) {
+            return false;
+        }
+        if (!Objects.equals(this.lastEdited, other.lastEdited)) {
             return false;
         }
         if (!Objects.equals(this.address, other.address)) {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" + "id=" + id + ", firstName=" + firstName + ", lastName=" + lastName + ", phone=" + phone + ", created=" + created + ", lastEdited=" + lastEdited + ", address=" + address + '}';
     }
 
 }

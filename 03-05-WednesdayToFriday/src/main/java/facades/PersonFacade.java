@@ -59,7 +59,7 @@ public class PersonFacade implements IPersonFacade{
     public PersonDTO addPerson(String fName, String lName, String phone, String street, String city, int zip) throws MissingInputException {
         EntityManager em = getEntityManager();
         Address address = getAddress(street, city, zip);
-        Person person = new Person(fName, lName, phone, address);
+        Person person = new Person(fName, lName, phone);
         
         if(fName.isEmpty() || lName.isEmpty()){
             throw new MissingInputException("First Name and/or Last Name is missing");
@@ -70,6 +70,8 @@ public class PersonFacade implements IPersonFacade{
         try{
             em.getTransaction().begin();
             em.persist(person);
+            person.setAddress(address);
+            em.merge(person);
             em.getTransaction().commit();
             return new PersonDTO(person);
         } finally {
@@ -88,8 +90,19 @@ public class PersonFacade implements IPersonFacade{
                 throw new PersonNotFoundException("Could not delete, provided id does not exist");
             }
             
+            Address address = person.getAddress();
+            address.removePerson(person);
+            
+            boolean deleteAddress = false;
+            if(address.getPersons().isEmpty()){
+                deleteAddress = true;
+            }
+            
             em.getTransaction().begin();
             em.remove(person);
+            if(deleteAddress){
+                em.remove(address); 
+            }
             em.getTransaction().commit();
             return new PersonDTO(person);
         } finally {
@@ -132,6 +145,8 @@ public class PersonFacade implements IPersonFacade{
         
         if(p.getfName().isEmpty() || p.getlName().isEmpty()){
             throw new MissingInputException("First Name and/or Last Name is missing");
+        } else if (p.getStreet().isEmpty() || p.getZip() <= 0 || p.getCity().isEmpty()) {
+            throw new MissingInputException("Street and/or city is missing");
         }
         
         try {
@@ -141,16 +156,24 @@ public class PersonFacade implements IPersonFacade{
                 throw new PersonNotFoundException("Could not edit, provided id does not exist");
             }
             
+            Address address = person.getAddress();
+            
+            em.getTransaction().begin();
+            
+            if(address.getPersons().contains(person) && address.getPersons().size() == 1){
+                em.remove(address);
+            }
+            
+            address.removePerson(person);
+            address = getAddress(p.getStreet(), p.getCity(), p.getZip());
+            
             person.setfName(p.getfName());
             person.setlName(p.getlName());
             person.setPhone(p.getPhone());
-            person.getAddress().setCity(p.getCity());
-            person.getAddress().setStreet(p.getStreet());
-            person.getAddress().setZip(p.getZip());
             person.setLastEdited(new Date());
+            person.setAddress(address);
             
-            em.getTransaction().begin();
-            em.persist(person);
+            em.merge(person);
             em.getTransaction().commit();
             return new PersonDTO(person);
         } finally {
@@ -173,7 +196,15 @@ public class PersonFacade implements IPersonFacade{
             if(addresses.isEmpty()){
                 address = new Address(street, city, zip);
             } else {
-                address = addresses.get(0);
+                int id = addresses.get(0).getId();
+                address = em.find(Address.class, id);
+
+                query = em.createNamedQuery("Person.getByAddress");
+                query.setParameter("id", address.getId());
+
+                List<Person> persons = query.getResultList();
+                address.setPersons(persons);
+
             }
             
             return address;
